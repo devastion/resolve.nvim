@@ -68,16 +68,19 @@ local function setup_buffer_keymaps(bufnr)
 
   local opts = { buffer = bufnr, silent = true }
 
-  vim.keymap.set("n", "]x", "<Plug>(resolve-next)", vim.tbl_extend("force", opts, { desc = "Next conflict (Resolve)", remap = true }))
-  vim.keymap.set("n", "[x", "<Plug>(resolve-prev)", vim.tbl_extend("force", opts, { desc = "Previous conflict (Resolve)", remap = true }))
-  vim.keymap.set("n", "<leader>co", "<Plug>(resolve-ours)", vim.tbl_extend("force", opts, { desc = "Choose ours (Resolve)", remap = true }))
-  vim.keymap.set("n", "<leader>ct", "<Plug>(resolve-theirs)", vim.tbl_extend("force", opts, { desc = "Choose theirs (Resolve)", remap = true }))
-  vim.keymap.set("n", "<leader>cb", "<Plug>(resolve-both)", vim.tbl_extend("force", opts, { desc = "Choose both (Resolve)", remap = true }))
-  vim.keymap.set("n", "<leader>cB", "<Plug>(resolve-both-reverse)", vim.tbl_extend("force", opts, { desc = "Choose both (reverse) (Resolve)", remap = true }))
-  vim.keymap.set("n", "<leader>cm", "<Plug>(resolve-base)", vim.tbl_extend("force", opts, { desc = "Choose base (Resolve)", remap = true }))
-  vim.keymap.set("n", "<leader>cn", "<Plug>(resolve-none)", vim.tbl_extend("force", opts, { desc = "Choose none (Resolve)", remap = true }))
-  vim.keymap.set("n", "<leader>cD", "<Plug>(resolve-diff)", vim.tbl_extend("force", opts, { desc = "Show diff (Resolve)", remap = true }))
-  vim.keymap.set("n", "<leader>cq", "<Plug>(resolve-list)", vim.tbl_extend("force", opts, { desc = "List conflicts (Resolve)", remap = true }))
+  -- Register the group for which-key
+  vim.keymap.set("n", "<leader>gc", "", vim.tbl_extend("force", opts, { desc = "+Git Conflicts" }))
+
+  vim.keymap.set("n", "]x", "<Plug>(resolve-next)", vim.tbl_extend("force", opts, { desc = "Next conflict", remap = true }))
+  vim.keymap.set("n", "[x", "<Plug>(resolve-prev)", vim.tbl_extend("force", opts, { desc = "Previous conflict", remap = true }))
+  vim.keymap.set("n", "<leader>gco", "<Plug>(resolve-ours)", vim.tbl_extend("force", opts, { desc = "Choose ours", remap = true }))
+  vim.keymap.set("n", "<leader>gct", "<Plug>(resolve-theirs)", vim.tbl_extend("force", opts, { desc = "Choose theirs", remap = true }))
+  vim.keymap.set("n", "<leader>gcb", "<Plug>(resolve-both)", vim.tbl_extend("force", opts, { desc = "Choose both", remap = true }))
+  vim.keymap.set("n", "<leader>gcB", "<Plug>(resolve-both-reverse)", vim.tbl_extend("force", opts, { desc = "Choose both (reverse)", remap = true }))
+  vim.keymap.set("n", "<leader>gcm", "<Plug>(resolve-base)", vim.tbl_extend("force", opts, { desc = "Choose base", remap = true }))
+  vim.keymap.set("n", "<leader>gcn", "<Plug>(resolve-none)", vim.tbl_extend("force", opts, { desc = "Choose none", remap = true }))
+  vim.keymap.set("n", "<leader>gcd", "<Plug>(resolve-diff)", vim.tbl_extend("force", opts, { desc = "Show diff", remap = true }))
+  vim.keymap.set("n", "<leader>gcl", "<Plug>(resolve-list)", vim.tbl_extend("force", opts, { desc = "List conflicts", remap = true }))
 
   vim.b[bufnr].resolve_keymaps_set = true
 end

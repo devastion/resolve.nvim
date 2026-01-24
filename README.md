@@ -119,14 +119,16 @@ When `default_keymaps` is enabled (keymaps are buffer-local, only active when co
 
 - `]x` - Navigate to next conflict
 - `[x` - Navigate to previous conflict
-- `<leader>co` - Choose ours (current changes)
-- `<leader>ct` - Choose theirs (incoming changes)
-- `<leader>cb` - Choose both (keep both versions)
-- `<leader>cB` - Choose both reverse (theirs then ours)
-- `<leader>cm` - Choose base/ancestor (diff3 only)
-- `<leader>cn` - Choose none (delete conflict)
-- `<leader>cq` - List all conflicts in quickfix window
-- `<leader>cD` - Show diff in floating window (diff3 only)
+- `<leader>gco` - Choose ours (current changes)
+- `<leader>gct` - Choose theirs (incoming changes)
+- `<leader>gcb` - Choose both (keep both versions)
+- `<leader>gcB` - Choose both reverse (theirs then ours)
+- `<leader>gcm` - Choose base/ancestor (diff3 only)
+- `<leader>gcn` - Choose none (delete conflict)
+- `<leader>gcl` - List all conflicts in quickfix window
+- `<leader>gcd` - Show diff in floating window (diff3 only)
+
+The `<leader>gc` prefix displays as "Git Conflicts" in which-key.
 
 ### Commands
 
@@ -154,16 +156,19 @@ require("resolve").setup({
 })
 
 -- Example: Set custom keymaps using <Plug> mappings
-vim.keymap.set("n", "]c", "<Plug>(resolve-next)", { desc = "Next conflict (Resolve)" })
-vim.keymap.set("n", "[c", "<Plug>(resolve-prev)", { desc = "Previous conflict (Resolve)" })
-vim.keymap.set("n", "<leader>co", "<Plug>(resolve-ours)", { desc = "Choose ours (Resolve)" })
-vim.keymap.set("n", "<leader>ct", "<Plug>(resolve-theirs)", { desc = "Choose theirs (Resolve)" })
-vim.keymap.set("n", "<leader>cb", "<Plug>(resolve-both)", { desc = "Choose both (Resolve)" })
-vim.keymap.set("n", "<leader>cB", "<Plug>(resolve-both-reverse)", { desc = "Choose both reverse (Resolve)" })
-vim.keymap.set("n", "<leader>cm", "<Plug>(resolve-base)", { desc = "Choose base (Resolve)" })
-vim.keymap.set("n", "<leader>cn", "<Plug>(resolve-none)", { desc = "Choose none (Resolve)" })
-vim.keymap.set("n", "<leader>cD", "<Plug>(resolve-diff)", { desc = "Show diff (Resolve)" })
-vim.keymap.set("n", "<leader>cq", "<Plug>(resolve-list)", { desc = "List conflicts (Resolve)" })
+-- Register the group for which-key (optional)
+vim.keymap.set("n", "<leader>gc", "", { desc = "+Git Conflicts" })
+
+vim.keymap.set("n", "]c", "<Plug>(resolve-next)", { desc = "Next conflict" })
+vim.keymap.set("n", "[c", "<Plug>(resolve-prev)", { desc = "Previous conflict" })
+vim.keymap.set("n", "<leader>gco", "<Plug>(resolve-ours)", { desc = "Choose ours" })
+vim.keymap.set("n", "<leader>gct", "<Plug>(resolve-theirs)", { desc = "Choose theirs" })
+vim.keymap.set("n", "<leader>gcb", "<Plug>(resolve-both)", { desc = "Choose both" })
+vim.keymap.set("n", "<leader>gcB", "<Plug>(resolve-both-reverse)", { desc = "Choose both reverse" })
+vim.keymap.set("n", "<leader>gcm", "<Plug>(resolve-base)", { desc = "Choose base" })
+vim.keymap.set("n", "<leader>gcn", "<Plug>(resolve-none)", { desc = "Choose none" })
+vim.keymap.set("n", "<leader>gcd", "<Plug>(resolve-diff)", { desc = "Show diff" })
+vim.keymap.set("n", "<leader>gcl", "<Plug>(resolve-list)", { desc = "List conflicts" })
 ```
 
 ### Available `<Plug>` Mappings
@@ -181,11 +186,13 @@ The following `<Plug>` mappings are always available for custom keybindings:
 - `<Plug>(resolve-diff)` - Show diff view
 - `<Plug>(resolve-list)` - List conflicts in quickfix
 
-**Note:** The default keymaps use `<leader>c` prefix with adjusted keys to avoid conflicts with LazyVim's `<leader>ca` (code actions), `<leader>cl` (LSP info), and `<leader>cd` (line diagnostics).
+**Note:** The default keymaps use `<leader>gc` prefix (git conflicts) to avoid conflicts with LSP-specific keybindings that may be dynamically set under `<leader>c` when language servers attach.
 
 ### Buffer-Local Keymaps
 
 When `default_keymaps` is enabled, keymaps are only set in buffers that contain conflicts. This prevents the keymaps from interfering with other plugins or workflows in files without conflicts.
+
+The plugin automatically registers the `<leader>gc` group with which-key (if installed), displaying "Git Conflicts" when you press `<leader>g` in a buffer with conflicts.
 
 ### Matchit Integration
 
@@ -195,7 +202,7 @@ The plugin integrates with Vim's matchit to allow jumping between conflict marke
 
 For diff3-style conflicts, you can view diffs showing what each side changed from the base version. This helps understand the actual changes when the differences are subtle or close together.
 
-Press `<leader>cD` (or `:ResolveDiff`) to open a floating window displaying:
+Press `<leader>gcd` (or `:ResolveDiff`) to open a floating window displaying:
 - Base ↔ Ours (what your side changed)
 - Base ↔ Theirs (what their side changed)
 
