@@ -14,6 +14,9 @@ local config = {
   -- Callback function called when conflicts are detected
   -- Receives: { bufnr = number, conflicts = table }
   on_conflict_detected = nil,
+  -- Callback function called when all conflicts are resolved
+  -- Receives: { bufnr = number }
+  on_conflicts_resolved = nil,
 }
 
 --- Set up highlight groups with colours appropriate for the current background
@@ -117,6 +120,39 @@ local function setup_buffer_keymaps(bufnr)
   vim.b[bufnr].resolve_keymaps_set = true
 end
 
+--- Remove buffer-local keymaps (called when no conflicts remain)
+local function remove_buffer_keymaps(bufnr)
+  -- Skip if keymaps weren't set
+  if not vim.b[bufnr].resolve_keymaps_set then
+    return
+  end
+
+  -- List of all keys we set
+  local keys = {
+    "]x",
+    "[x",
+    "<leader>gc",
+    "<leader>gcd",
+    "<leader>gco",
+    "<leader>gct",
+    "<leader>gcb",
+    "<leader>gcB",
+    "<leader>gcm",
+    "<leader>gcn",
+    "<leader>gcdo",
+    "<leader>gcdt",
+    "<leader>gcdb",
+    "<leader>gcl",
+  }
+
+  -- Delete each keymap
+  for _, key in ipairs(keys) do
+    pcall(vim.keymap.del, "n", key, { buffer = bufnr })
+  end
+
+  vim.b[bufnr].resolve_keymaps_set = nil
+end
+
 --- Set up matchit integration for % jumping between conflict markers
 local function setup_matchit(bufnr)
   -- Add conflict markers to buffer-local matchit patterns
@@ -127,7 +163,32 @@ local function setup_matchit(bufnr)
       match_words = match_words .. ","
     end
     vim.b[bufnr].match_words = match_words .. conflict_pairs
+    vim.b[bufnr].resolve_matchit_set = true
   end
+end
+
+--- Remove matchit integration (called when no conflicts remain)
+local function remove_matchit(bufnr)
+  -- Skip if matchit wasn't set up
+  if not vim.b[bufnr].resolve_matchit_set then
+    return
+  end
+
+  -- Remove conflict patterns from match_words
+  local match_words = vim.b[bufnr].match_words or ""
+  local conflict_pairs = "<<<<<<<:|||||||:=======:>>>>>>>"
+
+  -- Remove the conflict patterns (with or without comma)
+  match_words = match_words:gsub("," .. vim.pesc(conflict_pairs), "")
+  match_words = match_words:gsub(vim.pesc(conflict_pairs) .. ",?", "")
+
+  if match_words == "" then
+    vim.b[bufnr].match_words = nil
+  else
+    vim.b[bufnr].match_words = match_words
+  end
+
+  vim.b[bufnr].resolve_matchit_set = nil
 end
 
 --- Setup function to initialize the plugin
@@ -280,6 +341,17 @@ function M.detect_conflicts()
     -- Clear highlights if no conflicts
     local ns_id = vim.api.nvim_create_namespace("resolve_conflicts")
     vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
+
+    -- Remove buffer-local keymaps and matchit integration
+    if config.default_keymaps then
+      remove_buffer_keymaps(bufnr)
+    end
+    remove_matchit(bufnr)
+
+    -- Call user hook if defined
+    if config.on_conflicts_resolved then
+      config.on_conflicts_resolved({ bufnr = bufnr })
+    end
   end
 
   return conflicts

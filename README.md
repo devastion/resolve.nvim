@@ -72,6 +72,9 @@ require("resolve").setup({
   -- Callback function called when conflicts are detected
   -- Receives: { bufnr = number, conflicts = table }
   on_conflict_detected = nil,
+  -- Callback function called when all conflicts are resolved
+  -- Receives: { bufnr = number }
+  on_conflicts_resolved = nil,
 })
 ```
 
@@ -253,11 +256,12 @@ The diff view uses [delta](https://github.com/dandavison/delta) for beautiful sy
 
 ### Hooks and Callbacks
 
-You can run custom code when conflicts are detected using the `on_conflict_detected` callback:
+You can run custom code when conflicts are detected or resolved using callbacks:
 
 ```lua
 require("resolve").setup({
   on_conflict_detected = function(info)
+    -- Called when conflicts are found in a buffer
     -- info.bufnr: buffer number
     -- info.conflicts: table of conflict data
     vim.notify(string.format("Found %d conflicts!", #info.conflicts), vim.log.levels.WARN)
@@ -267,8 +271,19 @@ require("resolve").setup({
       require("resolve").list_conflicts()
     end)
   end,
+
+  on_conflicts_resolved = function(info)
+    -- Called when all conflicts in a buffer are resolved
+    -- info.bufnr: buffer number
+    vim.notify("All conflicts resolved!", vim.log.levels.INFO)
+
+    -- Example: Remove custom keymaps you added in on_conflict_detected
+    vim.keymap.del("n", "<leader>cc", { buffer = info.bufnr })
+  end,
 })
 ```
+
+The `on_conflicts_resolved` hook is particularly useful for cleaning up custom keymaps or other buffer-local setup you added in `on_conflict_detected`.
 
 ## How It Works
 
