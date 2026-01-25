@@ -19,7 +19,7 @@ A Neovim plugin for resolving merge conflicts with ease.
 ## Requirements
 
 - Neovim >= 0.9
-- [delta](https://github.com/dandavison/delta) - for the diff view feature (optional but recommended)
+- [delta](https://github.com/dandavison/delta) - required for diff view features (optional if you only use highlighting and conflict resolution)
 
 ## Installation
 

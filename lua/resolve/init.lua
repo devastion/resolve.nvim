@@ -209,8 +209,12 @@ function M.setup(opts)
   -- Set up highlight groups based on current background
   setup_highlights()
 
+  -- Create augroup for plugin autocmds (clear to handle multiple setup() calls)
+  local augroup = vim.api.nvim_create_augroup("ResolveConflicts", { clear = true })
+
   -- Re-apply highlights when colour scheme changes
   vim.api.nvim_create_autocmd("ColorScheme", {
+    group = augroup,
     pattern = "*",
     callback = setup_highlights,
   })
@@ -220,6 +224,7 @@ function M.setup(opts)
 
   -- Create autocommand to detect conflicts on buffer enter and after external file changes
   vim.api.nvim_create_autocmd({ "BufRead", "BufEnter", "FileChangedShellPost" }, {
+    group = augroup,
     pattern = "*",
     callback = function()
       M.detect_conflicts()
@@ -343,9 +348,12 @@ function M.detect_conflicts()
     -- Set up matchit integration
     setup_matchit(bufnr)
 
-    -- Call user hook if defined
+    -- Call user hook if defined (protected to prevent errors from breaking plugin)
     if config.on_conflict_detected then
-      config.on_conflict_detected({ bufnr = bufnr, conflicts = conflicts })
+      local ok, err = pcall(config.on_conflict_detected, { bufnr = bufnr, conflicts = conflicts })
+      if not ok then
+        vim.notify("Error in on_conflict_detected hook: " .. tostring(err), vim.log.levels.ERROR)
+      end
     end
   else
     -- Clear highlights if no conflicts
@@ -358,9 +366,12 @@ function M.detect_conflicts()
     end
     remove_matchit(bufnr)
 
-    -- Call user hook if defined
+    -- Call user hook if defined (protected to prevent errors from breaking plugin)
     if config.on_conflicts_resolved then
-      config.on_conflicts_resolved({ bufnr = bufnr })
+      local ok, err = pcall(config.on_conflicts_resolved, { bufnr = bufnr })
+      if not ok then
+        vim.notify("Error in on_conflicts_resolved hook: " .. tostring(err), vim.log.levels.ERROR)
+      end
     end
   end
 
