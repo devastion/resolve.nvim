@@ -24,25 +24,40 @@ local function setup_highlights()
   local colors
   if is_dark then
     colors = {
-      ours = { bg = "#3d5c3d", bold = true },      -- green tint
-      theirs = { bg = "#3d4d5c", bold = true },    -- blue tint
-      separator = { bg = "#4a4a4a", bold = true }, -- neutral grey
-      ancestor = { bg = "#5c4d3d", bold = true },  -- amber/orange tint
+      -- Marker highlights (bold with stronger colour)
+      ours_marker = { bg = "#3d5c3d", bold = true },      -- green tint
+      theirs_marker = { bg = "#3d4d5c", bold = true },    -- blue tint
+      separator_marker = { bg = "#4a4a4a", bold = true }, -- neutral grey
+      ancestor_marker = { bg = "#5c4d3d", bold = true },  -- amber/orange tint
+      -- Section highlights (subtle background tint)
+      ours_section = { bg = "#2a3a2a" },                  -- subtle green
+      theirs_section = { bg = "#2a2f3a" },                -- subtle blue
+      ancestor_section = { bg = "#3a322a" },              -- subtle amber
     }
   else
     colors = {
-      ours = { bg = "#d4e9d4", bold = true },      -- light green
-      theirs = { bg = "#d4e0e9", bold = true },    -- light blue
-      separator = { bg = "#e0e0e0", bold = true }, -- light grey
-      ancestor = { bg = "#e9e0d4", bold = true },  -- light amber
+      -- Marker highlights (bold with stronger colour)
+      ours_marker = { bg = "#a0d0a0", bold = true },      -- saturated green
+      theirs_marker = { bg = "#a0c0e0", bold = true },    -- saturated blue
+      separator_marker = { bg = "#c0c0c0", bold = true }, -- medium grey
+      ancestor_marker = { bg = "#e0c898", bold = true },  -- saturated amber
+      -- Section highlights (subtle background tint)
+      ours_section = { bg = "#e8f4e8" },                  -- very light green
+      theirs_section = { bg = "#e8ecf4" },                -- very light blue
+      ancestor_section = { bg = "#f4ece8" },              -- very light amber
     }
   end
 
-  -- Set highlights with default=true so users can override
-  vim.api.nvim_set_hl(0, "ResolveOursMarker", vim.tbl_extend("force", colors.ours, { default = true }))
-  vim.api.nvim_set_hl(0, "ResolveTheirsMarker", vim.tbl_extend("force", colors.theirs, { default = true }))
-  vim.api.nvim_set_hl(0, "ResolveSeparatorMarker", vim.tbl_extend("force", colors.separator, { default = true }))
-  vim.api.nvim_set_hl(0, "ResolveAncestorMarker", vim.tbl_extend("force", colors.ancestor, { default = true }))
+  -- Set marker highlights with default=true so users can override
+  vim.api.nvim_set_hl(0, "ResolveOursMarker", vim.tbl_extend("force", colors.ours_marker, { default = true }))
+  vim.api.nvim_set_hl(0, "ResolveTheirsMarker", vim.tbl_extend("force", colors.theirs_marker, { default = true }))
+  vim.api.nvim_set_hl(0, "ResolveSeparatorMarker", vim.tbl_extend("force", colors.separator_marker, { default = true }))
+  vim.api.nvim_set_hl(0, "ResolveAncestorMarker", vim.tbl_extend("force", colors.ancestor_marker, { default = true }))
+
+  -- Set section highlights with default=true so users can override
+  vim.api.nvim_set_hl(0, "ResolveOursSection", vim.tbl_extend("force", colors.ours_section, { default = true }))
+  vim.api.nvim_set_hl(0, "ResolveTheirsSection", vim.tbl_extend("force", colors.theirs_section, { default = true }))
+  vim.api.nvim_set_hl(0, "ResolveAncestorSection", vim.tbl_extend("force", colors.ancestor_section, { default = true }))
 end
 
 --- Define <Plug> mappings for extensibility
@@ -280,12 +295,13 @@ function M.highlight_conflicts(conflicts)
   vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
 
   for _, conflict in ipairs(conflicts) do
-    -- Only highlight the marker lines themselves, not the content
+    -- Highlight marker lines
     -- <<<<<<< marker (ours)
     vim.api.nvim_buf_set_extmark(bufnr, ns_id, conflict.ours_start - 1, 0, {
       end_col = 0,
       end_row = conflict.ours_start,
       hl_group = "ResolveOursMarker",
+      hl_eol = true,
     })
 
     -- ||||||| marker (ancestor) if exists
@@ -294,6 +310,7 @@ function M.highlight_conflicts(conflicts)
         end_col = 0,
         end_row = conflict.ancestor,
         hl_group = "ResolveAncestorMarker",
+        hl_eol = true,
       })
     end
 
@@ -302,6 +319,7 @@ function M.highlight_conflicts(conflicts)
       end_col = 0,
       end_row = conflict.separator,
       hl_group = "ResolveSeparatorMarker",
+      hl_eol = true,
     })
 
     -- >>>>>>> marker (theirs)
@@ -309,7 +327,40 @@ function M.highlight_conflicts(conflicts)
       end_col = 0,
       end_row = conflict.theirs_end,
       hl_group = "ResolveTheirsMarker",
+      hl_eol = true,
     })
+
+    -- Highlight content sections
+    -- Ours section (between <<<<<<< and ||||||| or =======)
+    local ours_end = conflict.ancestor and (conflict.ancestor - 1) or (conflict.separator - 1)
+    if ours_end > conflict.ours_start then
+      vim.api.nvim_buf_set_extmark(bufnr, ns_id, conflict.ours_start, 0, {
+        end_row = ours_end,
+        end_col = 0,
+        hl_group = "ResolveOursSection",
+        hl_eol = true,
+      })
+    end
+
+    -- Ancestor section (between ||||||| and =======) if exists
+    if conflict.ancestor and conflict.separator - 1 > conflict.ancestor then
+      vim.api.nvim_buf_set_extmark(bufnr, ns_id, conflict.ancestor, 0, {
+        end_row = conflict.separator - 1,
+        end_col = 0,
+        hl_group = "ResolveAncestorSection",
+        hl_eol = true,
+      })
+    end
+
+    -- Theirs section (between ======= and >>>>>>>)
+    if conflict.theirs_end - 1 > conflict.separator then
+      vim.api.nvim_buf_set_extmark(bufnr, ns_id, conflict.separator, 0, {
+        end_row = conflict.theirs_end - 1,
+        end_col = 0,
+        hl_group = "ResolveTheirsSection",
+        hl_eol = true,
+      })
+    end
   end
 end
 

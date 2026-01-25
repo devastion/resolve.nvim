@@ -5,7 +5,7 @@ A Neovim plugin for resolving merge conflicts with ease.
 ## Features
 
 - Automatically detect merge conflicts in buffers
-- Semantic highlighting with automatic light/dark theme support
+- Semantic highlighting for both markers and content sections with automatic light/dark theme support
 - Navigate between conflicts quickly
 - Resolve conflicts with simple commands
 - Support for standard 3-way merge and diff3 formats
@@ -77,7 +77,9 @@ require("resolve").setup({
 
 ### Theming and Highlights
 
-The plugin creates four highlight groups for conflict markers, with semantic colours that automatically adapt to light/dark backgrounds:
+The plugin creates highlight groups for both conflict markers and their content sections, with semantic colours that automatically adapt to light/dark backgrounds:
+
+#### Marker Highlights (bold lines)
 
 | Highlight Group | Marker | Dark Theme | Light Theme | Meaning |
 |----------------|--------|------------|-------------|---------|
@@ -88,6 +90,16 @@ The plugin creates four highlight groups for conflict markers, with semantic col
 
 All markers are displayed in **bold** with normal text colour and a tinted background.
 
+#### Section Highlights (content between markers)
+
+| Highlight Group | Section | Dark Theme | Light Theme | Meaning |
+|----------------|---------|------------|-------------|---------|
+| `ResolveOursSection` | Ours content | Subtle green | Very light green | Your changes |
+| `ResolveTheirsSection` | Theirs content | Subtle blue | Very light blue | Incoming changes |
+| `ResolveAncestorSection` | Base content | Subtle amber | Very light amber | Original (diff3) |
+
+The section highlights provide a subtle background tint to help visually distinguish which code belongs to which side.
+
 The highlights automatically update when you change colour schemes or toggle between light/dark backgrounds.
 
 #### Customising Highlights
@@ -96,19 +108,40 @@ Override the highlight groups in your config to customise the appearance:
 
 ```lua
 -- After calling setup(), override any highlights you want to change
+
+-- Marker highlights (bold lines)
 vim.api.nvim_set_hl(0, "ResolveOursMarker", { bg = "#3d5c3d", bold = true })
 vim.api.nvim_set_hl(0, "ResolveTheirsMarker", { bg = "#3d4d5c", bold = true })
 vim.api.nvim_set_hl(0, "ResolveSeparatorMarker", { bg = "#4a4a4a", bold = true })
 vim.api.nvim_set_hl(0, "ResolveAncestorMarker", { bg = "#5c4d3d", bold = true })
+
+-- Section highlights (content areas)
+vim.api.nvim_set_hl(0, "ResolveOursSection", { bg = "#2a3a2a" })
+vim.api.nvim_set_hl(0, "ResolveTheirsSection", { bg = "#2a2f3a" })
+vim.api.nvim_set_hl(0, "ResolveAncestorSection", { bg = "#3a322a" })
 ```
 
 Or link to existing highlight groups if you prefer theme-matched colours:
 
 ```lua
+-- Markers
 vim.api.nvim_set_hl(0, "ResolveOursMarker", { link = "DiffAdd" })
 vim.api.nvim_set_hl(0, "ResolveTheirsMarker", { link = "DiffChange" })
 vim.api.nvim_set_hl(0, "ResolveSeparatorMarker", { link = "NonText" })
 vim.api.nvim_set_hl(0, "ResolveAncestorMarker", { link = "DiffText" })
+
+-- Sections
+vim.api.nvim_set_hl(0, "ResolveOursSection", { link = "DiffAdd" })
+vim.api.nvim_set_hl(0, "ResolveTheirsSection", { link = "DiffChange" })
+vim.api.nvim_set_hl(0, "ResolveAncestorSection", { link = "DiffText" })
+```
+
+To disable section highlights entirely while keeping marker highlights:
+
+```lua
+vim.api.nvim_set_hl(0, "ResolveOursSection", {})
+vim.api.nvim_set_hl(0, "ResolveTheirsSection", {})
+vim.api.nvim_set_hl(0, "ResolveAncestorSection", {})
 ```
 
 ## Usage
