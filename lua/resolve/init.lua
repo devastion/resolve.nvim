@@ -147,8 +147,8 @@ function M.setup(opts)
   -- Set up <Plug> mappings (always available for user remapping)
   setup_plug_mappings()
 
-  -- Create autocommand to detect conflicts on buffer enter
-  vim.api.nvim_create_autocmd({ "BufRead", "BufEnter" }, {
+  -- Create autocommand to detect conflicts on buffer enter and after external file changes
+  vim.api.nvim_create_autocmd({ "BufRead", "BufEnter", "FileChangedShellPost" }, {
     pattern = "*",
     callback = function()
       M.detect_conflicts()
