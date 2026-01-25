@@ -653,6 +653,11 @@ local function show_diff_internal(show_ours, show_theirs)
   if show_ours then
     local base_ours_cmd = get_diff_command(files.base_file, files.ours_file)
     local base_ours_output = vim.fn.system(base_ours_cmd)
+    if vim.v.shell_error ~= 0 then
+      vim.fn.delete(files.tmpdir, "rf")
+      vim.notify("Failed to generate diff (ours): command exited with status " .. vim.v.shell_error, vim.log.levels.ERROR)
+      return
+    end
     if show_theirs then table.insert(output_parts, "━━━ Base ↔ Ours ━━━") end
     table.insert(output_parts, base_ours_output)
   end
@@ -660,6 +665,11 @@ local function show_diff_internal(show_ours, show_theirs)
   if show_theirs then
     local base_theirs_cmd = get_diff_command(files.base_file, files.theirs_file)
     local base_theirs_output = vim.fn.system(base_theirs_cmd)
+    if vim.v.shell_error ~= 0 then
+      vim.fn.delete(files.tmpdir, "rf")
+      vim.notify("Failed to generate diff (theirs): command exited with status " .. vim.v.shell_error, vim.log.levels.ERROR)
+      return
+    end
     if show_ours then table.insert(output_parts, "━━━ Base ↔ Theirs ━━━") end
     table.insert(output_parts, base_theirs_output)
   end
