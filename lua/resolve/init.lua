@@ -643,29 +643,122 @@ function M.choose_base()
   M.detect_conflicts()
 end
 
---- List all conflicts in a quickfix list
-function M.list_conflicts()
-  local conflicts = scan_conflicts()
+--- Get the git repo root for a given path, or nil if not in a git repo
+--- @return string|nil
+local function get_git_root()
+  local result = vim.fn.systemlist("git rev-parse --show-toplevel")
+  if vim.v.shell_error ~= 0 or #result == 0 then
+    return nil
+  end
+  return result[1]
+end
 
-  if #conflicts == 0 then
+--- Get list of files with unmerged conflicts from git
+--- @return string[] List of absolute file paths
+local function get_git_conflicted_files()
+  local git_root = get_git_root()
+  if not git_root then
+    return {}
+  end
+
+  local result = vim.fn.systemlist("git diff --name-only --diff-filter=U")
+  if vim.v.shell_error ~= 0 then
+    return {}
+  end
+
+  local files = {}
+  for _, rel_path in ipairs(result) do
+    if rel_path ~= "" then
+      table.insert(files, git_root .. "/" .. rel_path)
+    end
+  end
+  return files
+end
+
+--- Scan a file (by path) for conflict markers and return list of conflicts
+--- Uses buffer lines if the file is loaded, otherwise reads from disk.
+--- @param filepath string Absolute path to the file
+--- @return table[] List of conflict tables with start, ours_start, ancestor, separator, theirs_end, end
+local function scan_file_conflicts(filepath)
+  local lines
+
+  -- Check if file is already loaded in a buffer
+  local bufnr = vim.fn.bufnr(filepath)
+  if bufnr ~= -1 and vim.api.nvim_buf_is_loaded(bufnr) then
+    lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  else
+    -- Read from disk
+    if vim.fn.filereadable(filepath) ~= 1 then
+      return {}
+    end
+    lines = vim.fn.readfile(filepath)
+  end
+
+  local conflicts = {}
+  local in_conflict = false
+  local current_conflict = {}
+
+  for i, line in ipairs(lines) do
+    if line:match(config.markers.ours) then
+      in_conflict = true
+      current_conflict = {
+        start = i,
+        ours_start = i,
+      }
+    elseif line:match(config.markers.ancestor) and in_conflict then
+      current_conflict.ancestor = i
+    elseif line:match(config.markers.separator) and in_conflict then
+      current_conflict.separator = i
+    elseif line:match(config.markers.theirs) and in_conflict then
+      current_conflict.theirs_end = i
+      current_conflict["end"] = i
+      table.insert(conflicts, current_conflict)
+      in_conflict = false
+      current_conflict = {}
+    end
+  end
+
+  return conflicts
+end
+
+--- List all conflicts across all git-conflicted files in a quickfix list
+function M.list_conflicts()
+  local conflicted_files = get_git_conflicted_files()
+
+  -- If not in a git repo or no unmerged files, fall back to current buffer
+  if #conflicted_files == 0 then
+    local bufnr = vim.api.nvim_get_current_buf()
+    local filename = vim.api.nvim_buf_get_name(bufnr)
+    if filename ~= "" then
+      conflicted_files = { filename }
+    end
+  end
+
+  local qf_list = {}
+  local total_conflicts = 0
+
+  for _, filepath in ipairs(conflicted_files) do
+    local conflicts = scan_file_conflicts(filepath)
+    for i, conflict in ipairs(conflicts) do
+      total_conflicts = total_conflicts + 1
+      table.insert(qf_list, {
+        filename = filepath,
+        lnum = conflict.start,
+        text = string.format("Conflict %d (in %s)", i, vim.fn.fnamemodify(filepath, ":~:.")),
+      })
+    end
+  end
+
+  if total_conflicts == 0 then
     vim.notify("No conflicts found", vim.log.levels.INFO)
     return
   end
 
-  local qf_list = {}
-  local bufnr = vim.api.nvim_get_current_buf()
-  local filename = vim.api.nvim_buf_get_name(bufnr)
-
-  for i, conflict in ipairs(conflicts) do
-    table.insert(qf_list, {
-      bufnr = bufnr,
-      filename = filename,
-      lnum = conflict.start,
-      text = string.format("Conflict %d/%d", i, #conflicts),
-    })
-  end
-
   vim.fn.setqflist(qf_list)
+  vim.notify(
+    string.format("Found %d conflict(s) in %d file(s)", total_conflicts, #conflicted_files),
+    vim.log.levels.INFO
+  )
   vim.cmd("copen")
 end
 
